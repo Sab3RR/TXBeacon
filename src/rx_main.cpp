@@ -40,13 +40,13 @@
 ///////////////////
 
 device_affinity_t ui_devices[] = {
-  {&CRSF_device, 0},
+ // {&CRSF_device, 0},
 #ifdef HAS_LED
   {&LED_device, 1},
 #endif
-  {&LUA_device, 1},
+//  {&LUA_device, 1},
 #ifdef HAS_RGB
-  {&RGB_device, 1},
+//  {&RGB_device, 1},
 #endif
 #ifdef HAS_WIFI_OFF
   {&WIFI_device, 1},
@@ -61,7 +61,7 @@ device_affinity_t ui_devices[] = {
   {&AnalogVbat_device, 1},
 #endif
 #ifdef HAS_SERVO_OUTPUT
-  {&ServoOut_device, 0},
+//  {&ServoOut_device, 0},
 #endif
 };
 
@@ -200,6 +200,11 @@ void ExitBindingMode();
 void OnELRSBindMSP(uint8_t* packet);
 extern void setWifiUpdateMode();
 
+static void setupFHSSChannel(const uint8_t channel)
+{
+    Radio.SetFrequencyReg(FHSSgetCurrFreq(channel));
+}
+
 static uint8_t minLqForChaos()
 {
     // Determine the most number of CRC-passing packets we could receive on
@@ -278,7 +283,7 @@ void SetRFLinkRate(uint8_t index) // Set speed of RF link
     interval = interval * 12 / 10; // increase the packet interval by 20% to allow adding packet header
 #endif
     hwTimer.updateInterval(interval);
-    Radio.Config(ModParams->bw, ModParams->sf, ModParams->cr, GetInitialFreq(),
+    Radio.Config(ModParams->bw, ModParams->sf, ModParams->cr, setupFHSSChannel(1),
                  ModParams->PreambleLen, invertIQ, ModParams->PayloadLength, 0
 #if defined(RADIO_SX128X)
                  , uidMacSeedGet(), OtaCrcInitializer, (ModParams->radio_type == RADIO_TYPE_SX128x_FLRC)
@@ -307,7 +312,7 @@ bool ICACHE_RAM_ATTR HandleFHSS()
     }
 
     alreadyFHSS = true;
-    Radio.SetFrequencyReg(FHSSgetNextFreq());
+    // Radio.SetFrequencyReg(FHSSgetNextFreq());
 
     uint8_t modresultTLM = (OtaNonce + 1) % ExpressLRS_currTlmDenom;
 
@@ -660,8 +665,8 @@ void ICACHE_RAM_ATTR HWtimerCallbackTock()
     // updateDiversity();
     // bool didFHSS = HandleFHSS();
     bool didFHSS = true;
-    bool tlmSent = HandleSendTelemetryResponse();
-
+   // bool tlmSent = HandleSendTelemetryResponse();
+    bool tlmSent = true;
     if (!didFHSS && !tlmSent && LQCalc.currentIsSet() && Radio.FrequencyErrorAvailable())
     {
         HandleFreqCorr(Radio.GetFrequencyErrorbool());      // Adjusts FreqCorrection for RX freq offset
@@ -903,6 +908,10 @@ double kalman(double U)
 }
 
 
+#define KEY8    (uint8_t)0x8
+#define KEY16   (uint16_t)0x16
+#define KEY32   (uint32_t)0x0032
+
 bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const status)
 {
     clockcallback = ESP.getCycleCount();
@@ -967,6 +976,12 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
         responce = false;
         request = true;
         
+    }
+    if (otaPktPtr->std.type == PACKET_TYPE_MSPDATA)
+    {
+        char str[20];
+        int l = sprintf(str, "type = %x", otaPktPtr->msp.msp_ul.payload.type);
+        Serial.write(str, l);
     }
     return true;
 
@@ -1305,7 +1320,7 @@ void HandleUARTin()
 
 static void setupRadio()
 {
-    Radio.currFreq = GetInitialFreq();
+    Radio.currFreq = setupFHSSChannel(1);
 #if defined(RADIO_SX127X)
     //Radio.currSyncWord = UID[3];
 #endif
@@ -1576,6 +1591,7 @@ void setup()
 unsigned long last;
 uint32_t la;
 unsigned long lReq;
+bool doOneTime = true;
 
 void loop()
 {
@@ -1619,6 +1635,17 @@ void loop()
         //     hwTimer.resume();
         HandleSendTelemetryResponse();
         
+    }
+    if (doOneTime)
+    {
+        WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
+        otaPkt.msp.type = PACKET_TYPE_MSPDATA;
+        otaPkt.msp.msp_ul.payload.type = TYPE_WAKE_UP;
+        otaPkt.msp.msp_ul.payload.key32 = KEY32;
+        
+        OtaGeneratePacketCrc(&otaPkt);
+        Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
+        doOneTime = false;
     }
     if (rangeArray.size() >= 100)
     {

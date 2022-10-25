@@ -19,6 +19,97 @@
 // Mask used to XOR the ModelId into the SYNC packet for ModelMatch
 #define MODELMATCH_MASK 0x3f
 
+
+#define TYPE_WAKE_UP 0x28
+#define TYPE_WAKE_UP_RESPONCE 0x29
+#define TYPE_SERVICE_TO_SYNC 0x38
+#define TYPE_SERVICE_TO_SYNC_RESPONCE 0x39
+#define TYPE_GPS_RECVEST 0x48
+#define TYPE_GPS_RESPONCE 0x49
+#define TYPE_PING_RECVEST 0x58
+#define TYPE_PONG_RESPONCE 0x59
+#define TYPE_TICK_RECVEST 0x68
+#define TYPE_TICK_RESPONCE 0x69
+#define TYPE_TO_PING_RECVEST 0x56
+#define TYPE_TO_PING_RESPONCE 0x57
+
+typedef struct {
+    uint8_t type;
+    union {
+        uint32_t key32; // type 0x28 WAKE UP
+        struct {
+            uint8_t id;
+            uint8_t key8;
+            uint16_t key16;
+        } PACKED wake_up_responce; // type 0x29 WAKE UP RECIVE
+        struct {
+            uint8_t id;
+            uint8_t key8;
+            uint16_t fhssconfig;
+        } PACKED service_to_sync; // type 0x38 SERVICE TO SYNC
+        struct {
+            uint8_t id;
+            uint8_t key8;
+            uint16_t key16;
+        } PACKED service_to_sync_responce; // type 0x39 SERVICE TO SYNC RESPONCE
+        struct {
+            uint8_t id;
+            uint8_t key8;
+            uint16_t key16;
+        } PACKED gps_recvest; // type 0x48 GPS_RECVEST
+        struct {
+            uint32_t responce;
+        } PACKED gps_responce; // type 0x49 GPS_RESPONCE
+        struct {
+            uint8_t id;
+            uint8_t key8;
+            uint16_t key16;
+        } PACKED to_ping_recvest; // type 0x56 TO_PING_RECVEST
+        struct {
+            uint8_t id;
+            uint8_t key8;
+            uint16_t key16;
+        } PACKED to_ping_responce; // type 0x57 TO_PING_RESPONCE
+        struct {
+            uint32_t free;
+        } PACKED ping; // type 0x58 PING_RECVEST
+        struct {
+            uint32_t free;
+        } PACKED pong; // type 0x59 PONG_RESPONCE
+        struct {
+            uint8_t id;
+            uint8_t key8;
+            uint16_t key16;
+        } PACKED tick_recvest; // type 0x68 TICK_RECVEST
+
+        struct {
+            uint32_t tick;
+        } PACKED tick_responce; // type 0x69 TICK_RESPONCE
+
+    };
+}  PACKED Pack_msg;
+
+typedef struct {
+    // The packet type must always be the low two bits of the first byte of the
+    // packet to match the same placement in OTA_Packet8_s
+    uint8_t type: 2,
+            crcHigh: 6;
+    union {
+        /** PACKET_TYPE_RCDATA **/
+        /** PACKET_TYPE_MSP **/
+        struct {
+            uint8_t packageIndex;
+            Pack_msg payload;
+            
+            
+        } msp_ul;
+        /** PACKET_TYPE_SYNC **/
+        /** PACKET_TYPE_TLM **/
+         // PACKET_TYPE_TLM
+    };
+    uint8_t crcLow;
+} PACKED OTA_PacketMsp_s;
+
 typedef struct {
     uint8_t fhssIndex;
     uint8_t nonce;
@@ -136,6 +227,7 @@ typedef struct {
     union {
         OTA_Packet4_s std;
         OTA_Packet8_s full;
+        OTA_PacketMsp_s msp;
     };
 } PACKED OTA_Packet_s;
 

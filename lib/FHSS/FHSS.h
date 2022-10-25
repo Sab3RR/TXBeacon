@@ -60,6 +60,12 @@ static inline void FHSSsetCurrIndex(const uint8_t value)
     FHSSptr = value % FHSSgetSequenceCount();
 }
 
+static inline uint32_t FHSSgetCurrFreq(const uint8_t value){
+    FHSSsetCurrIndex(value);
+    uint32_t freq = FHSSconfig->freq_start + (freq_spread * FHSSsequence[FHSSptr] / FREQ_SPREAD_SCALE) - FreqCorrection;
+    return freq;
+}
+
 // Advance the pointer to the next hop and return the frequency of that channel
 static inline uint32_t FHSSgetNextFreq()
 {
