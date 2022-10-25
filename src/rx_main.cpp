@@ -283,7 +283,7 @@ void SetRFLinkRate(uint8_t index) // Set speed of RF link
     interval = interval * 12 / 10; // increase the packet interval by 20% to allow adding packet header
 #endif
     hwTimer.updateInterval(interval);
-    Radio.Config(ModParams->bw, ModParams->sf, ModParams->cr, setupFHSSChannel(1),
+    Radio.Config(ModParams->bw, ModParams->sf, ModParams->cr, FHSSgetCurrFreq(1),
                  ModParams->PreambleLen, invertIQ, ModParams->PayloadLength, 0
 #if defined(RADIO_SX128X)
                  , uidMacSeedGet(), OtaCrcInitializer, (ModParams->radio_type == RADIO_TYPE_SX128x_FLRC)
@@ -919,7 +919,7 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
         char *str;
         str = (char*)malloc(20);
         int l = sprintf(str, "Got Packet\n");
-//        Serial.write(str, l);
+        Serial.write(str, l);
         free(str);
     }
         
@@ -979,8 +979,8 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
     }
     if (otaPktPtr->std.type == PACKET_TYPE_MSPDATA)
     {
-        char str[20];
-        int l = sprintf(str, "type = %x", otaPktPtr->msp.msp_ul.payload.type);
+        char str[50];
+        int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key16);
         Serial.write(str, l);
     }
     return true;
@@ -1320,7 +1320,7 @@ void HandleUARTin()
 
 static void setupRadio()
 {
-    Radio.currFreq = setupFHSSChannel(1);
+    Radio.currFreq = FHSSgetCurrFreq(1);
 #if defined(RADIO_SX127X)
     //Radio.currSyncWord = UID[3];
 #endif
@@ -1633,7 +1633,7 @@ void loop()
         la = t;
         // if (!hwTimer::running)
         //     hwTimer.resume();
-        HandleSendTelemetryResponse();
+        // HandleSendTelemetryResponse();
         
     }
     if (doOneTime)
@@ -1646,6 +1646,7 @@ void loop()
         OtaGeneratePacketCrc(&otaPkt);
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
         doOneTime = false;
+         
     }
     if (rangeArray.size() >= 100)
     {
