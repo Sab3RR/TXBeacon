@@ -983,6 +983,7 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
         int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key16, millis());
         Serial.write(str, l);
     }
+    
     return true;
 
 }
