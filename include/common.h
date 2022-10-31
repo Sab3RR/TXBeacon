@@ -17,6 +17,13 @@
 // It should be incremented when the OTA packet structure is modified.
 #define OTA_VERSION_ID      3
 
+namespace TXCommand {
+    bool ssResponce = false;
+    int syncResponce = -1;
+
+    void encode (char c);
+}
+
 extern uint8_t BindingUID[6];
 extern uint8_t UID[6];
 extern uint8_t MasterUID[6];

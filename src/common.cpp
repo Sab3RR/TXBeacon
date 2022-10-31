@@ -209,3 +209,4 @@ void initUID()
     memcpy(UID, MasterUID, sizeof(UID));
     OtaUpdateCrcInitFromUid();
 }
+

@@ -908,9 +908,7 @@ double kalman(double U)
 }
 
 
-#define KEY8    (uint8_t)0x8
-#define KEY16   (uint16_t)0x16
-#define KEY32   (uint32_t)0x0032
+
 
 bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const status)
 {
@@ -1640,18 +1638,20 @@ void loop()
         // HandleSendTelemetryResponse();
         
     }
-    if (doOneTime)
-    {
-        WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
-        otaPkt.msp.type = PACKET_TYPE_MSPDATA;
-        otaPkt.msp.msp_ul.payload.type = TYPE_WAKE_UP;
-        otaPkt.msp.msp_ul.payload.key32 = KEY32;
+    if (Serial.available() > 0)
+        TXCommand::encode(Serial.read());
+    // if (doOneTime)
+    // {
+    //     WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
+    //     otaPkt.msp.type = PACKET_TYPE_MSPDATA;
+    //     otaPkt.msp.msp_ul.payload.type = TYPE_WAKE_UP;
+    //     otaPkt.msp.msp_ul.payload.key32 = KEY32;
         
-        OtaGeneratePacketCrc(&otaPkt);
-        Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
-        doOneTime = false;
+    //     OtaGeneratePacketCrc(&otaPkt);
+    //     Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
+    //     doOneTime = false;
          
-    }
+    // }
     if (rangeArray.size() >= 100)
     {
         uint32_t average = std::reduce(rangeArray.cbegin(), rangeArray.cend())/ (float)rangeArray.size();

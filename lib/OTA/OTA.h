@@ -19,6 +19,10 @@
 // Mask used to XOR the ModelId into the SYNC packet for ModelMatch
 #define MODELMATCH_MASK 0x3f
 
+#define KEY8    (uint8_t)0x8
+#define KEY16   (uint16_t)0x16
+#define KEY32   (uint32_t)0x0032
+
 
 #define TYPE_WAKE_UP 0x28
 #define TYPE_WAKE_UP_RESPONCE 0x29
