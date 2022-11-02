@@ -975,12 +975,21 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
         request = true;
         
     }
-    if (otaPktPtr->std.type == PACKET_TYPE_MSPDATA)
+    else if (otaPktPtr->std.type == PACKET_TYPE_MSPDATA)
     {
+        
+        if (otaPktPtr->msp.msp_ul.payload.type == TYPE_SERVICE_TO_SYNC_RESPONCE && otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.id == TXCommand::syncResponceId)
+        {
+            if (otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.key8 == KEY8 && otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.key16 == KEY16)
+            {
+                TXCommand::ssResponce = true;
+            }
+        }
         char str[50];
         int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key16, millis());
         Serial.write(str, l);
     }
+    
 
 
     

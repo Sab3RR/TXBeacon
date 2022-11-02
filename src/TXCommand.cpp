@@ -22,6 +22,25 @@ namespace TXCommand{
     uint8_t arrg[3] = {0,0,0};
     uint8_t lineiter;
     uint8_t arrgiter;
+    uint32_t lastTick;
+
+    void (*loopfunc)() = nullptr;
+    
+    inline void loop(){
+        if (loopfunc != nullptr)
+            loopfunc();
+    }
+
+    void serviceToSyncloop(){
+        if (ssResponce){
+            loopfunc = nullptr;
+            setupFHSSChannel(SYNCFHSS);
+            ssResponce = false;
+        }
+        else if (millis() - lastTick > 1000)
+            serviceToSync();
+    }
+
     
 
     void serviceToSync(){
@@ -31,11 +50,14 @@ namespace TXCommand{
         otaPkt.msp.msp_ul.payload.service_to_sync.id = atoi((char*)arrg);
         otaPkt.msp.msp_ul.payload.service_to_sync.key8 = KEY8;
         otaPkt.msp.msp_ul.payload.service_to_sync.fhssconfig = SYNCFHSS;
-        syncResponce = otaPkt.msp.msp_ul.payload.service_to_sync.id;
+        syncResponceId = otaPkt.msp.msp_ul.payload.service_to_sync.id;
 
         OtaGeneratePacketCrc(&otaPkt);
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
+        lastTick = millis();
+        loopfunc = serviceToSyncloop;
         
+
     }
 
     void wakeUp(){

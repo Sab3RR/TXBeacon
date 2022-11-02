@@ -17,10 +17,13 @@
 // It should be incremented when the OTA packet structure is modified.
 #define OTA_VERSION_ID      3
 
+static void setupFHSSChannel(const uint8_t channel);
+
 namespace TXCommand {
     bool ssResponce = false;
-    int syncResponce = -1;
+    int syncResponceId = -1;
 
+    void loop();
     void encode (char c);
 }
 
