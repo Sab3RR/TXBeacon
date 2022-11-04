@@ -27,6 +27,7 @@
 #include <chrono>
 #include <numeric>
 #include <algorithm>
+#include "TXCommand.h"
 
 ///LUA///
 #define LUA_MAX_PARAMS 32
@@ -200,10 +201,7 @@ void ExitBindingMode();
 void OnELRSBindMSP(uint8_t* packet);
 extern void setWifiUpdateMode();
 
-static void setupFHSSChannel(const uint8_t channel)
-{
-    Radio.SetFrequencyReg(FHSSgetCurrFreq(channel));
-}
+
 
 static uint8_t minLqForChaos()
 {
@@ -985,6 +983,12 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
                 TXCommand::ssResponce = true;
             }
         }
+        else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_GPS_RESPONCE)
+        {
+            char str[50];
+            int l = sprintf(str, "GPS\n Packet = %u\n responce = %lu", otaPktPtr->msp.msp_ul.packageIndex, otaPktPtr->msp.msp_ul.payload.gps_responce.responce);
+            Serial.write(str, l);
+        }
         char str[50];
         int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key16, millis());
         Serial.write(str, l);
@@ -1682,6 +1686,7 @@ void loop()
         rangeArray.clear();
         rangeTime.clear();
     }
+    
     // hwTimer.resume();
     
 

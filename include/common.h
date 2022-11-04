@@ -3,6 +3,7 @@
 #ifndef UNIT_TEST
 #include "targets.h"
 
+
 #if defined(RADIO_SX127X)
 #include "SX127xDriver.h"
 #elif defined(RADIO_SX128X)
@@ -17,15 +18,9 @@
 // It should be incremented when the OTA packet structure is modified.
 #define OTA_VERSION_ID      3
 
-static void setupFHSSChannel(const uint8_t channel);
 
-namespace TXCommand {
-    bool ssResponce = false;
-    int syncResponceId = -1;
 
-    void loop();
-    void encode (char c);
-}
+
 
 extern uint8_t BindingUID[6];
 extern uint8_t UID[6];

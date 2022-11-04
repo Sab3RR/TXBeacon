@@ -1,6 +1,8 @@
 #include "common.h"
+#include "TXCommand.h"
 #include "OTA.h"
 #include <string>
+#include "FHSS.h"
 
 #define SYNCFHSS 5
 
@@ -13,9 +15,12 @@
 #define COMMAND_GPS_RECVEST "gr"
 #define COMMAND_TO_PING_RECVEST "pr"
 #define COMMAND_TICK_RECVEST "tr"
+#define COMMAND_DEBUG_CHANNEL "dc"
 
 namespace TXCommand{
 
+
+    
 
     uint8_t command = INVALID_COMMAND;
     uint8_t line[3] = {0,0,0};
@@ -26,15 +31,20 @@ namespace TXCommand{
 
     void (*loopfunc)() = nullptr;
     
+    
+
     inline void loop(){
         if (loopfunc != nullptr)
             loopfunc();
     }
 
-    void serviceToSyncloop(){
+    static void serviceToSyncloop(){
         if (ssResponce){
             loopfunc = nullptr;
             setupFHSSChannel(SYNCFHSS);
+            char str[50];
+            int l = sprintf(str, "success to Sync");
+            Serial.write(str, l);
             ssResponce = false;
         }
         else if (millis() - lastTick > 1000)
@@ -60,6 +70,18 @@ namespace TXCommand{
 
     }
 
+    void sendTrashPacket(){
+        WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
+        OtaGeneratePacketCrc(&otaPkt);
+        Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
+    }
+
+    void debugChannel(){
+         setupFHSSChannel(atoi((char*)arrg));
+         loopfunc = sendTrashPacket;
+    }
+    
+
     void wakeUp(){
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
@@ -70,12 +92,31 @@ namespace TXCommand{
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
     }
 
+    void sendGPSRecvest(){
+        WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
+        otaPkt.msp.type = PACKET_TYPE_MSPDATA;
+        otaPkt.msp.msp_ul.payload.type = TYPE_GPS_RECVEST;
+        otaPkt.msp.msp_ul.packageIndex = atoi((char*)arrg);
+        otaPkt.msp.msp_ul.payload.gps_recvest.id = 2;
+        otaPkt.msp.msp_ul.payload.gps_recvest.key8 = KEY8;
+        otaPkt.msp.msp_ul.payload.gps_recvest.key16 = KEY16;
+
+        OtaGeneratePacketCrc(&otaPkt);
+        Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
+    }
+
     void proccess(){
         if (strcmp((char*)line, COMMAND_WAKE_UP) == 0)
             wakeUp();
         else if (strcmp((char*)line, COMMAND_SERVICE_TO_SYNC) == 0)
         {
             serviceToSync();
+        }
+        else if (strcmp((char*)line, COMMAND_DEBUG_CHANNEL) == 0){
+            debugChannel();
+        }
+        else if (strcmp((char*)line, COMMAND_GPS_RECVEST) == 0){
+            sendGPSRecvest();
         }
         
         
