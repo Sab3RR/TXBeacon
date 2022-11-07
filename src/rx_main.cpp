@@ -988,6 +988,27 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
             char str[50];
             int l = sprintf(str, "GPS\n Packet = %u\n responce = %lu", otaPktPtr->msp.msp_ul.packageIndex, otaPktPtr->msp.msp_ul.payload.gps_responce.responce);
             Serial.write(str, l);
+            switch (otaPktPtr->msp.msp_ul.packageIndex)
+            {
+            case 0:
+                ((uint32_t*)&TXCommand::lat)[0] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                break;
+            case 1:
+                ((uint32_t*)&TXCommand::lat)[1] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                break;
+            case 2:
+                ((uint32_t*)&TXCommand::lng)[0] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                break;
+            case 3:
+                ((uint32_t*)&TXCommand::lng)[1] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                break;
+            case 4:
+                ((uint32_t*)&TXCommand::alt)[0] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                break;
+            case 5:
+                ((uint32_t*)&TXCommand::alt)[1] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                break;
+            }
         }
         char str[50];
         int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key16, millis());

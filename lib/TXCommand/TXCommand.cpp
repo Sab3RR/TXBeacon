@@ -19,15 +19,13 @@
 
 namespace TXCommand{
 
-
-    
-
     uint8_t command = INVALID_COMMAND;
     uint8_t line[3] = {0,0,0};
     uint8_t arrg[3] = {0,0,0};
     uint8_t lineiter;
     uint8_t arrgiter;
     uint32_t lastTick;
+    uint32_t lastgrRecvest;
 
     void (*loopfunc)() = nullptr;
     
@@ -88,6 +86,30 @@ namespace TXCommand{
         otaPkt.msp.msp_ul.payload.type = TYPE_WAKE_UP;
         otaPkt.msp.msp_ul.payload.key32 = KEY32;
         
+        OtaGeneratePacketCrc(&otaPkt);
+        Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
+    }
+
+    void GPSRecvestloop(){
+        if (!grResponce && millis() - lastgrRecvest < 1000)
+            return;
+        if (gpsIter > 5){
+            gpsIter = 0;
+            grResponce = false;
+            loopfunc = nullptr;
+            return;
+        }
+
+        WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
+        otaPkt.msp.type = PACKET_TYPE_MSPDATA;
+        otaPkt.msp.msp_ul.payload.type = TYPE_GPS_RECVEST;
+        otaPkt.msp.msp_ul.packageIndex = gpsIter;
+        otaPkt.msp.msp_ul.payload.gps_recvest.id = atoi((char*)arrg);
+        otaPkt.msp.msp_ul.payload.gps_recvest.key8 = KEY8;
+        otaPkt.msp.msp_ul.payload.gps_recvest.key16 = KEY16;
+
+        grResponce = false;
+        lastgrRecvest = millis();
         OtaGeneratePacketCrc(&otaPkt);
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
     }
