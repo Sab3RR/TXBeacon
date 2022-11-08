@@ -976,39 +976,42 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
     else if (otaPktPtr->std.type == PACKET_TYPE_MSPDATA)
     {
         
-        if (otaPktPtr->msp.msp_ul.payload.type == TYPE_SERVICE_TO_SYNC_RESPONCE && otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.id == TXCommand::syncResponceId)
+        if (otaPktPtr->msp.msp_ul.payload.type == TYPE_SERVICE_TO_SYNC_RESPONCE && otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.id == TXCommand::get_syncRespId())
         {
             if (otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.key8 == KEY8 && otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.key16 == KEY16)
             {
-                TXCommand::ssResponce = true;
+                TXCommand::set_ssResponce(true);
             }
         }
         else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_GPS_RESPONCE)
         {
-            char str[50];
-            int l = sprintf(str, "GPS\n Packet = %u\n responce = %lu", otaPktPtr->msp.msp_ul.packageIndex, otaPktPtr->msp.msp_ul.payload.gps_responce.responce);
-            Serial.write(str, l);
+            
             switch (otaPktPtr->msp.msp_ul.packageIndex)
             {
             case 0:
-                ((uint32_t*)&TXCommand::lat)[0] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                TXCommand::set_1lat(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
                 break;
             case 1:
-                ((uint32_t*)&TXCommand::lat)[1] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                TXCommand::set_2lat(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);  
                 break;
             case 2:
-                ((uint32_t*)&TXCommand::lng)[0] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                TXCommand::set_1lng(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
                 break;
             case 3:
-                ((uint32_t*)&TXCommand::lng)[1] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                TXCommand::set_2lng(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
                 break;
             case 4:
-                ((uint32_t*)&TXCommand::alt)[0] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                TXCommand::set_1alt(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);
                 break;
             case 5:
-                ((uint32_t*)&TXCommand::alt)[1] = otaPktPtr->msp.msp_ul.payload.gps_responce.responce; 
+                TXCommand::set_2alt(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);                 
                 break;
             }
+            TXCommand::set_grResp(true);
+            TXCommand::inc_gpsIter();
+            char str[100];
+            int l = sprintf(str, "GPS\n Packet = %u\n responce = %lu\n lat = %f\n lng = %f\n alt = %f\n", otaPktPtr->msp.msp_ul.packageIndex, otaPktPtr->msp.msp_ul.payload.gps_responce.responce, TXCommand::get_lat(), TXCommand::get_lng(), TXCommand::get_alt());
+            Serial.write(str, l);
         }
         char str[50];
         int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key16, millis());
@@ -1707,7 +1710,7 @@ void loop()
         rangeArray.clear();
         rangeTime.clear();
     }
-    
+    TXCommand::loop();
     // hwTimer.resume();
     
 

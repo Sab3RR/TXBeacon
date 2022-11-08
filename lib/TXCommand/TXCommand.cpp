@@ -17,7 +17,7 @@
 #define COMMAND_TICK_RECVEST "tr"
 #define COMMAND_DEBUG_CHANNEL "dc"
 
-namespace TXCommand{
+class TXCommand{
 
     uint8_t command = INVALID_COMMAND;
     uint8_t line[3] = {0,0,0};
@@ -29,9 +29,32 @@ namespace TXCommand{
 
     void (*loopfunc)() = nullptr;
     
-    
+    static bool ssResponce = false;
+    static int syncResponceId = -1;
+    static bool grResponce = false;
+    static uint8_t gpsIter = 0;
+    static double lat;
+    static double lng;
+    static double alt;
 
-    inline void loop(){
+    static bool get_ssResponce(){ return ssResponce;}
+    static void set_ssResponce(bool s){ ssResponce = s;}
+    static int get_syncRespId(){return syncResponceId;}
+    static void set_syncRespId(int s){ syncResponceId = s;}
+    static bool get_grResp(){return grResponce;}
+    static void set_grResp(bool s){grResponce = s;}
+    static void inc_gpsIter(){++gpsIter;}
+    static double get_lat(){ return lat;}
+    static double get_lng(){ return lng;}
+    static double get_alt(){ return alt;}
+    static void set_1lat(uint32_t s){((uint32_t*)&lat)[0] = s;}
+    static void set_2lat(uint32_t s){((uint32_t*)&lat)[1] = s;}
+    static void set_1lng(uint32_t s){((uint32_t*)&lng)[0] = s;}
+    static void set_2lng(uint32_t s){((uint32_t*)&lng)[1] = s;}
+    static void set_1alt(uint32_t s){((uint32_t*)&alt)[0] = s;}
+    static void set_2alt(uint32_t s){((uint32_t*)&alt)[1] = s;}
+
+    void loop(){
         if (loopfunc != nullptr)
             loopfunc();
     }
@@ -138,7 +161,8 @@ namespace TXCommand{
             debugChannel();
         }
         else if (strcmp((char*)line, COMMAND_GPS_RECVEST) == 0){
-            sendGPSRecvest();
+            loopfunc = GPSRecvestloop;
+            grResponce = true;
         }
         
         
