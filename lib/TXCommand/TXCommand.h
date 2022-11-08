@@ -38,7 +38,7 @@ public:
     void set_syncRespId(int s){ syncResponceId = s;}
     bool get_grResp(){return grResponce;}
     void set_grResp(bool s){grResponce = s;}
-    void inc_gpsIter(){++gpsIter;}
+    inline void inc_gpsIter(){++gpsIter;}
     double get_lat(){ return lat;}
     double get_lng(){ return lng;}
     double get_alt(){ return alt;}
