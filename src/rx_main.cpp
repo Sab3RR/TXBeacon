@@ -40,6 +40,8 @@
 #define PACKET_TO_TOCK_SLACK 200 // Desired buffer time between Packet ISR and Tock ISR
 ///////////////////
 
+TXCommand command;
+
 device_affinity_t ui_devices[] = {
  // {&CRSF_device, 0},
 #ifdef HAS_LED
@@ -976,11 +978,11 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
     else if (otaPktPtr->std.type == PACKET_TYPE_MSPDATA)
     {
         
-        if (otaPktPtr->msp.msp_ul.payload.type == TYPE_SERVICE_TO_SYNC_RESPONCE && otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.id == TXCommand::get_syncRespId())
+        if (otaPktPtr->msp.msp_ul.payload.type == TYPE_SERVICE_TO_SYNC_RESPONCE && otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.id == command.get_syncRespId())
         {
             if (otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.key8 == KEY8 && otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.key16 == KEY16)
             {
-                TXCommand::set_ssResponce(true);
+                command.set_ssResponce(true);
             }
         }
         else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_GPS_RESPONCE)
@@ -989,28 +991,28 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
             switch (otaPktPtr->msp.msp_ul.packageIndex)
             {
             case 0:
-                TXCommand::set_1lat(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
+                command.set_1lat(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
                 break;
             case 1:
-                TXCommand::set_2lat(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);  
+                command.set_2lat(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);  
                 break;
             case 2:
-                TXCommand::set_1lng(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
+                command.set_1lng(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
                 break;
             case 3:
-                TXCommand::set_2lng(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
+                command.set_2lng(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
                 break;
             case 4:
-                TXCommand::set_1alt(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);
+                command.set_1alt(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);
                 break;
             case 5:
-                TXCommand::set_2alt(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);                 
+                command.set_2alt(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);                 
                 break;
             }
-            TXCommand::set_grResp(true);
-            TXCommand::inc_gpsIter();
+            command.set_grResp(true);
+            command.inc_gpsIter();
             char str[100];
-            int l = sprintf(str, "GPS\n Packet = %u\n responce = %lu\n lat = %f\n lng = %f\n alt = %f\n", otaPktPtr->msp.msp_ul.packageIndex, otaPktPtr->msp.msp_ul.payload.gps_responce.responce, TXCommand::get_lat(), TXCommand::get_lng(), TXCommand::get_alt());
+            int l = sprintf(str, "GPS\n Packet = %u\n responce = %lu\n lat = %f\n lng = %f\n alt = %f\n", otaPktPtr->msp.msp_ul.packageIndex, otaPktPtr->msp.msp_ul.payload.gps_responce.responce, command.get_lat(), command.get_lng(), command.get_alt());
             Serial.write(str, l);
         }
         char str[50];
@@ -1676,7 +1678,7 @@ void loop()
         
     }
     if (Serial.available() > 0)
-        TXCommand::encode(Serial.read());
+        command.encode(Serial.read());
     // if (doOneTime)
     // {
     //     WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
@@ -1710,7 +1712,7 @@ void loop()
         rangeArray.clear();
         rangeTime.clear();
     }
-    TXCommand::loop();
+    command.loop();
     // hwTimer.resume();
     
 

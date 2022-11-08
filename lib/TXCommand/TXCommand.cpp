@@ -17,49 +17,18 @@
 #define COMMAND_TICK_RECVEST "tr"
 #define COMMAND_DEBUG_CHANNEL "dc"
 
-class TXCommand{
 
-    uint8_t command = INVALID_COMMAND;
-    uint8_t line[3] = {0,0,0};
-    uint8_t arrg[3] = {0,0,0};
-    uint8_t lineiter;
-    uint8_t arrgiter;
-    uint32_t lastTick;
-    uint32_t lastgrRecvest;
 
-    void (*loopfunc)() = nullptr;
     
-    static bool ssResponce = false;
-    static int syncResponceId = -1;
-    static bool grResponce = false;
-    static uint8_t gpsIter = 0;
-    static double lat;
-    static double lng;
-    static double alt;
 
-    static bool get_ssResponce(){ return ssResponce;}
-    static void set_ssResponce(bool s){ ssResponce = s;}
-    static int get_syncRespId(){return syncResponceId;}
-    static void set_syncRespId(int s){ syncResponceId = s;}
-    static bool get_grResp(){return grResponce;}
-    static void set_grResp(bool s){grResponce = s;}
-    static void inc_gpsIter(){++gpsIter;}
-    static double get_lat(){ return lat;}
-    static double get_lng(){ return lng;}
-    static double get_alt(){ return alt;}
-    static void set_1lat(uint32_t s){((uint32_t*)&lat)[0] = s;}
-    static void set_2lat(uint32_t s){((uint32_t*)&lat)[1] = s;}
-    static void set_1lng(uint32_t s){((uint32_t*)&lng)[0] = s;}
-    static void set_2lng(uint32_t s){((uint32_t*)&lng)[1] = s;}
-    static void set_1alt(uint32_t s){((uint32_t*)&alt)[0] = s;}
-    static void set_2alt(uint32_t s){((uint32_t*)&alt)[1] = s;}
+     
 
-    void loop(){
+    void TXCommand::loop(){
         if (loopfunc != nullptr)
             loopfunc();
     }
 
-    static void serviceToSyncloop(){
+    void TXCommand::serviceToSyncloop(){
         if (ssResponce){
             loopfunc = nullptr;
             setupFHSSChannel(SYNCFHSS);
@@ -74,7 +43,7 @@ class TXCommand{
 
     
 
-    void serviceToSync(){
+    void TXCommand::serviceToSync(){
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_SERVICE_TO_SYNC;
@@ -86,24 +55,26 @@ class TXCommand{
         OtaGeneratePacketCrc(&otaPkt);
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
         lastTick = millis();
-        loopfunc = serviceToSyncloop;
+        loopfunc = std::bind(&TXCommand::serviceToSyncloop, this);
+        
         
 
     }
 
-    void sendTrashPacket(){
+    void TXCommand::sendTrashPacket(){
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
         OtaGeneratePacketCrc(&otaPkt);
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
     }
 
-    void debugChannel(){
+    void TXCommand::debugChannel(){
          setupFHSSChannel(atoi((char*)arrg));
-         loopfunc = sendTrashPacket;
+         loopfunc = std::bind(&TXCommand::sendTrashPacket, this);
+         
     }
     
 
-    void wakeUp(){
+    void TXCommand::wakeUp(){
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_WAKE_UP;
@@ -113,7 +84,7 @@ class TXCommand{
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
     }
 
-    void GPSRecvestloop(){
+    void TXCommand::GPSRecvestloop(){
         if (!grResponce && millis() - lastgrRecvest < 1000)
             return;
         if (gpsIter > 5){
@@ -137,7 +108,7 @@ class TXCommand{
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
     }
 
-    void sendGPSRecvest(){
+    void TXCommand::sendGPSRecvest(){
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_GPS_RECVEST;
@@ -150,7 +121,7 @@ class TXCommand{
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
     }
 
-    void proccess(){
+    void TXCommand::proccess(){
         if (strcmp((char*)line, COMMAND_WAKE_UP) == 0)
             wakeUp();
         else if (strcmp((char*)line, COMMAND_SERVICE_TO_SYNC) == 0)
@@ -161,7 +132,7 @@ class TXCommand{
             debugChannel();
         }
         else if (strcmp((char*)line, COMMAND_GPS_RECVEST) == 0){
-            loopfunc = GPSRecvestloop;
+            loopfunc = std::bind(&TXCommand::GPSRecvestloop, this);
             grResponce = true;
         }
         
@@ -169,7 +140,7 @@ class TXCommand{
     }
 
 
-    void encode (char c){
+    void TXCommand::encode (char c){
         switch (command){
             case START_COMMAND:
                 line[lineiter] = c;
@@ -203,4 +174,3 @@ class TXCommand{
         }
         Serial.write(c);
     }
-}
