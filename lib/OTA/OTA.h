@@ -37,56 +37,56 @@
 #define TYPE_TO_PING_RECVEST 0x56
 #define TYPE_TO_PING_RESPONCE 0x57
 
-typedef struct {
+typedef struct PackMsg {
     uint8_t type;
     union {
         uint32_t key32; // type 0x28 WAKE UP
-        struct {
+        struct WakeUpResponce {
             uint8_t id;
             uint8_t key8;
             uint16_t key16;
         } PACKED wake_up_responce; // type 0x29 WAKE UP RECIVE
-        struct {
+        struct ServiceToSync {
             uint8_t id;
             uint8_t key8;
             uint16_t fhssconfig;
         } PACKED service_to_sync; // type 0x38 SERVICE TO SYNC
-        struct {
+        struct ServiceToSyncResponce {
             uint8_t id;
             uint8_t key8;
             uint16_t key16;
         } PACKED service_to_sync_responce; // type 0x39 SERVICE TO SYNC RESPONCE
-        struct {
+        struct GPSRecvest {
             uint8_t id;
             uint8_t key8;
             uint16_t key16;
         } PACKED gps_recvest; // type 0x48 GPS_RECVEST
-        struct {
+        struct GPSResponce{
             uint32_t responce;
         } PACKED gps_responce; // type 0x49 GPS_RESPONCE
-        struct {
+        struct ToPingRecvest {
             uint8_t id;
             uint8_t key8;
             uint16_t key16;
         } PACKED to_ping_recvest; // type 0x56 TO_PING_RECVEST
-        struct {
+        struct ToPingResponce {
             uint8_t id;
             uint8_t key8;
             uint16_t key16;
         } PACKED to_ping_responce; // type 0x57 TO_PING_RESPONCE
-        struct {
+        struct Ping {
             uint32_t free;
         } PACKED ping; // type 0x58 PING_RECVEST
-        struct {
+        struct Pong {
             uint32_t free;
         } PACKED pong; // type 0x59 PONG_RESPONCE
-        struct {
+        struct TickRecvest {
             uint8_t id;
             uint8_t key8;
             uint16_t key16;
         } PACKED tick_recvest; // type 0x68 TICK_RECVEST
 
-        struct {
+        struct TickResponce {
             uint32_t tick;
         } PACKED tick_responce; // type 0x69 TICK_RESPONCE
 
@@ -101,7 +101,7 @@ typedef struct {
     union {
         /** PACKET_TYPE_RCDATA **/
         /** PACKET_TYPE_MSP **/
-        struct {
+        struct MSP_Package {
             uint8_t packageIndex;
             Pack_msg payload;
             

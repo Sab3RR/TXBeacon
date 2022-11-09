@@ -4,18 +4,7 @@
 #include <string>
 #include "FHSS.h"
 
-#define SYNCFHSS 5
 
-#define START_COMMAND 0
-#define ARRG_COMMAND 1
-#define INVALID_COMMAND -1
-
-#define COMMAND_WAKE_UP "wu"
-#define COMMAND_SERVICE_TO_SYNC "ss"
-#define COMMAND_GPS_RECVEST "gr"
-#define COMMAND_TO_PING_RECVEST "pr"
-#define COMMAND_TICK_RECVEST "tr"
-#define COMMAND_DEBUG_CHANNEL "dc"
 
 
 
@@ -71,6 +60,27 @@
          setupFHSSChannel(atoi((char*)arrg));
          loopfunc = std::bind(&TXCommand::sendTrashPacket, this);
          
+    }
+
+    
+
+    void TXCommand::sendToPingRecvest(){
+        WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
+        PackMsg::ToPingRecvest& to_ping_recvest = otaPkt.msp.msp_ul.payload.to_ping_recvest;
+        otaPkt.msp.type = PACKET_TYPE_MSPDATA;
+        otaPkt.msp.msp_ul.payload.type = TYPE_TO_PING_RECVEST;
+        to_ping_recvest.id = atoi((char*)arrg);
+        to_ping_recvest.key8 = KEY8;
+        to_ping_recvest.key16 = KEY16;
+    }
+
+    void TXCommand::toPingRecvest(){
+        if (topingrecvest && millis() - lasttopingrecvest > 1000){
+            sendToPingRecvest();
+        }
+        else if(!topingrecvest){
+
+        }
     }
     
 

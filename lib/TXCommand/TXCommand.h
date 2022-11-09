@@ -19,12 +19,15 @@
 
 class TXCommand {
 public:
-    TXCommand() : ssResponce(false), syncResponceId(-1), grResponce(false), gpsIter(0), loopfunc(nullptr){
+    TXCommand() : ssResponce(false), syncResponceId(-1)
+        ,grResponce(false), gpsIter(0), loopfunc(nullptr)
+        ,prResponce(false){
         
     }
     bool ssResponce;
     int syncResponceId;
     bool grResponce;
+    bool prResponce;
     uint8_t gpsIter;
     double lat;
     double lng;
@@ -65,10 +68,15 @@ private:
     uint8_t arrgiter;
     uint32_t lastTick;
     uint32_t lastgrRecvest;
+    uint32_t lasttopingrecvest;
+    bool topingrecvest = false;
 
     void serviceToSyncloop();
     void sendTrashPacket();
     void debugChannel();
+    void sendToPingRecvest();
+    void toPingRecvest();
+    void pingRecvest();
     void wakeUp();
     void GPSRecvestloop();
     void sendGPSRecvest();
