@@ -24,7 +24,7 @@
 
 class TXCommand {
 public:
-    TXCommand() : loopfunc(nullptr), TXDoneCallBack(nullptr){
+    TXCommand() : loopfunc(nullptr), TXDoneCallBack(nullptr), pingrec(*this){
         
     }
     bool ssResponce = false;
@@ -50,6 +50,8 @@ public:
         double U_hat;
         double K;
 
+        bool init = false;
+
         Kalman() : Q(10), P(0), U_hat(0), K(0){
 
         }
@@ -59,6 +61,7 @@ public:
             P = 0;
             U_hat = res;
             K = 0;
+            init = true;
         }
 
         double calc(double U){
@@ -102,6 +105,26 @@ public:
     void encode (char c);
 
 private:
+
+
+    class PingRecvest {
+        uint32_t lastCall;
+        TXCommand& _baseTX;
+        bool _isResponce;
+        std::vector<double> _time_v;
+        double _aver;
+        Kalman kalman_t;
+        Kalman kalman_aver;
+    public:
+        friend TXCommand;
+        PingRecvest (TXCommand &base) : _baseTX(base){
+            _time_v.reserve(100);
+        }
+
+        void PongCallBack(uint32_t pong);
+    } pingrec;
+
+
     uint8_t command = INVALID_COMMAND;
     uint8_t line[3] = {0,0,0};
     uint8_t arrg[3] = {0,0,0};
@@ -115,7 +138,7 @@ private:
 
     void toTickRecvestCallBack();
 
-    void PongCallBack(uint32_t pong);
+//    void PongCallBack(uint32_t pong);
     void TickCallBack(uint32_t tick);
 
     void serviceToSyncloop();

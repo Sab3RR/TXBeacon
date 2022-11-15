@@ -3,6 +3,7 @@
 #include "OTA.h"
 #include <string>
 #include "FHSS.h"
+#include <numeric>
 
 
 
@@ -88,7 +89,7 @@
     }
 
     void TXCommand::sendPing(){
-        if (!isresponce){
+        if (!pingrec._isResponce){
             return;
         }
 
@@ -97,8 +98,8 @@
         Pack_msg::Ping& ping = otaPkt.msp.msp_ul.payload.ping;
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_PING_RECVEST;
-        isresponce = false;
-        lastCall = ESP.getCycleCount();
+        pingrec._isResponce = false;
+        pingrec.lastCall = ESP.getCycleCount();
 
         OtaGeneratePacketCrc(&otaPkt);
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
@@ -126,6 +127,31 @@
         lasttotickrecvest = millis();
     }
     
+    void TXCommand::PingRecvest::PongCallBack(uint32_t pong){
+        uint32_t airtime = pong - lastCall;
+        if (_baseTX.kalman.init){
+            _time_v.push_back(kalman_t.calc((double)airtime));
+        }
+        else{
+            kalman_t.resetTo((double)airtime);
+        }
+        if (_time_v.size() < 100)
+            _isResponce = true;
+        else {
+            _aver = std::reduce(_time_v.cbegin(), _time_v.cend()) / (double)_time_v.size();
+            _time_v.clear();
+            if (_time_v.capacity() < 100)
+                _time_v.reserve(100);
+            if (kalman_aver.init)
+                kalman_aver.calc(_aver);
+            else{
+                kalman_aver.resetTo(_aver);
+            }
+            _isResponce = true;
+            
+        }
+    }
+
     void TXCommand::toTickRecvest(){
         if (!isresponce && millis() - lasttotickrecvest > 1000){
             setupFHSSChannel(SYNCFHSS);
