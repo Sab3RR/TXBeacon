@@ -72,6 +72,10 @@
         to_ping_recvest.id = atoi((char*)arrg);
         to_ping_recvest.key8 = KEY8;
         to_ping_recvest.key16 = KEY16;
+
+        OtaGeneratePacketCrc(&otaPkt);
+        Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
+        topingrecvest = false;        
     }
 
     void TXCommand::toPingRecvest(){
@@ -79,10 +83,57 @@
             sendToPingRecvest();
         }
         else if(!topingrecvest){
-
+            sendPing();
         }
     }
+
+    void TXCommand::sendPing(){
+        if (!isresponce){
+            return;
+        }
+
+        WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
+
+        Pack_msg::Ping& ping = otaPkt.msp.msp_ul.payload.ping;
+        otaPkt.msp.type = PACKET_TYPE_MSPDATA;
+        otaPkt.msp.msp_ul.payload.type = TYPE_PING_RECVEST;
+        isresponce = false;
+        lastCall = ESP.getCycleCount();
+
+        OtaGeneratePacketCrc(&otaPkt);
+        Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
+        
+    }
+
+    void TXCommand::toTickRecvestCallBack(){
+        setupFHSSChannel(20 + atoi((char*)arrg));
+        TXDoneCallBack = nullptr;
+    }
+
+    void TXCommand::sendToTickRecvest(){
+        WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
+        
+        Pack_msg::TickRecvest& tick_recvest = otaPkt.msp.msp_ul.payload.tick_recvest;
+        otaPkt.msp.type = PACKET_TYPE_MSPDATA;
+        otaPkt.msp.msp_ul.payload.type = TYPE_TICK_RECVEST;
+        tick_recvest.id = atoi((char*)arrg);
+        tick_recvest.key8 = KEY8;
+        tick_recvest.key16 = KEY16;
+
+        TXDoneCallBack = std::bind(&TXCommand::toTickRecvestCallBack, this);
+        OtaGeneratePacketCrc(&otaPkt);
+        Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
+        lasttotickrecvest = millis();
+    }
     
+    void TXCommand::toTickRecvest(){
+        if (!isresponce && millis() - lasttotickrecvest > 1000){
+            setupFHSSChannel(SYNCFHSS);
+            sendToTickRecvest();
+        }
+        
+
+    }
 
     void TXCommand::wakeUp(){
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
@@ -144,6 +195,10 @@
         else if (strcmp((char*)line, COMMAND_GPS_RECVEST) == 0){
             loopfunc = std::bind(&TXCommand::GPSRecvestloop, this);
             grResponce = true;
+        }
+        else if (strcmp((char*)line, COMMAND_TO_PING_RECVEST) == 0){
+            loopfunc = std::bind(&TXCommand::toPingRecvest, this);
+            topingrecvest = true;
         }
         
         

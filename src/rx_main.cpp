@@ -1112,6 +1112,8 @@ bool ICACHE_RAM_ATTR RXdoneISR(SX12xxDriverCommon::rx_status const status)
 
 void ICACHE_RAM_ATTR TXdoneISR()
 {
+    if (command.TXDoneCallBack != nullptr)
+        command.TXDoneCallBack();
     Radio.RXnb();
 #if defined(DEBUG_RX_SCOREBOARD)
     DBGW('T');

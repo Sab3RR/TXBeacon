@@ -3,6 +3,7 @@
 #include <string>
 #include "FHSS.h"
 #include <functional>
+#include <list>
 
 #define SYNCFHSS 5
 
@@ -17,23 +18,35 @@
 #define COMMAND_TICK_RECVEST "tr"
 #define COMMAND_DEBUG_CHANNEL "dc"
 
+#define __PREALLOC_SIZE__ 100
+
+
+
 class TXCommand {
 public:
-    TXCommand() : ssResponce(false), syncResponceId(-1)
-        ,grResponce(false), gpsIter(0), loopfunc(nullptr)
-        ,prResponce(false){
+    TXCommand() : loopfunc(nullptr), TXDoneCallBack(nullptr){
         
     }
-    bool ssResponce;
-    int syncResponceId;
-    bool grResponce;
-    bool prResponce;
-    uint8_t gpsIter;
+    bool ssResponce = false;
+    int syncResponceId = -1;
+
+
+    bool grResponce = false;
+
+
+    bool prResponce = false;
+    bool isresponce = false;
+    uint32_t lastCall;
+    uint8_t gpsIter = 0;
     double lat;
     double lng;
     double alt;
+    
+
+    std::list<uint32_t> time_l;
 
     std::function<void()> loopfunc;
+    std::function<void()> TXDoneCallBack;
 
     bool get_ssResponce(){ return ssResponce;}
     void set_ssResponce(bool s){ ssResponce = s;}
@@ -69,14 +82,20 @@ private:
     uint32_t lastTick;
     uint32_t lastgrRecvest;
     uint32_t lasttopingrecvest;
+    uint32_t lasttotickrecvest;
     bool topingrecvest = false;
+
+    void toTickRecvestCallBack();
 
     void serviceToSyncloop();
     void sendTrashPacket();
     void debugChannel();
     void sendToPingRecvest();
+    void sendPing();
+    void sendToTickRecvest();
     void toPingRecvest();
     void pingRecvest();
+    void toTickRecvest();
     void wakeUp();
     void GPSRecvestloop();
     void sendGPSRecvest();
