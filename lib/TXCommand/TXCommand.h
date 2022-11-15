@@ -41,6 +41,34 @@ public:
     double lat;
     double lng;
     double alt;
+
+    struct Kalman{
+        const double R = 5000;
+        const double H = 1.00;
+        double Q;
+        double P;
+        double U_hat;
+        double K;
+
+        Kalman() : Q(10), P(0), U_hat(0), K(0){
+
+        }
+
+        void resetTo(double res){
+            Q = 10;
+            P = 0;
+            U_hat = res;
+            K = 0;
+        }
+
+        double calc(double U){
+            K = P * H / (H * P * H + R);
+            U_hat = U_hat + K * (U - H * U_hat);
+            P = (1 - K * H) * P + Q;
+
+            return U_hat;
+        }
+    } kalman;
     
 
     std::list<uint32_t> time_l;
@@ -86,6 +114,9 @@ private:
     bool topingrecvest = false;
 
     void toTickRecvestCallBack();
+
+    void PongCallBack(uint32_t pong);
+    void TickCallBack(uint32_t tick);
 
     void serviceToSyncloop();
     void sendTrashPacket();
