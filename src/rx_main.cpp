@@ -1021,7 +1021,7 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
         }
         else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_TICK_RESPONCE)
         {
-            command.TickCallback(otaPktPtr->msp.msp_ul.payload.tick_responce.tick);
+            command.TickCallback(Radio.CallBack32 - otaPktPtr->msp.msp_ul.payload.tick_responce.tick);
         }
         char str[50];
         int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key16, millis());

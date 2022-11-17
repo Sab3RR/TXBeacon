@@ -18,6 +18,10 @@
             loopfunc();
     }
 
+    inline void TXCommand::PongCallBack(uint32_t pong){
+        pingrec.PongCallBack(pong);
+    }
+
     void TXCommand::serviceToSyncloop(){
         if (ssResponce){
             loopfunc = nullptr;
@@ -129,12 +133,13 @@
     
     void TXCommand::PingRecvest::PongCallBack(uint32_t pong){
         uint32_t airtime = pong - lastCall;
-        if (_baseTX.kalman.init){
+        if (kalman_t.init){
             _time_v.push_back(kalman_t.calc((double)airtime));
         }
         else{
             kalman_t.resetTo((double)airtime);
         }
+
         if (_time_v.size() < 100)
             _isResponce = true;
         else {
@@ -149,6 +154,31 @@
             }
             _isResponce = true;
             
+        }
+    }
+    
+
+    inline void TXCommand::TickCallBack(uint32_t tick){
+        tickrec.TickCallBack(tick);
+    }
+    
+
+    void TXCommand::TickRecvest::TickCallBack(uint32_t tick){
+        if (kalman_t.init){
+            _time_v.push_back(kalman_t.calc((double)tick));
+        }
+        else{
+            kalman_t.resetTo((double)tick);
+        }
+
+        if (_time_v.size() > 100)
+        {
+            _time_v.erase(_time_v.begin());
+            _aver = std::reduce(_time_v.cbegin(), _time_v.cend()) / (double)_time_v.size();
+            if (kalman_aver.init)
+                kalman_aver.calc(_aver);
+            else
+                kalman_aver.resetTo(_aver);
         }
     }
 
