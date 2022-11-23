@@ -20,6 +20,37 @@
 
 #define __PREALLOC_SIZE__ 100
 
+template <typename T>
+struct Kalman{
+    const T R = 5000;
+    const T H = 1.00;
+    T Q;
+    T P;
+    T U_hat;
+    T K;
+
+    bool init = false;
+
+    Kalman() : Q(10), P(0), U_hat(0), K(0){
+
+    }
+
+    void resetTo(double res){
+        Q = 10;
+        P = 0;
+        U_hat = res;
+        K = 0;
+        init = true;
+    }
+
+    double calc(double U){
+        K = P * H / (H * P * H + R);
+        U_hat = U_hat + K * (U - H * U_hat);
+        P = (1 - K * H) * P + Q;
+
+        return U_hat;
+    }
+};
 
 
 class TXCommand {
@@ -41,37 +72,7 @@ public:
     double lat;
     double lng;
     double alt;
-
-    struct Kalman{
-        const double R = 5000;
-        const double H = 1.00;
-        double Q;
-        double P;
-        double U_hat;
-        double K;
-
-        bool init = false;
-
-        Kalman() : Q(10), P(0), U_hat(0), K(0){
-
-        }
-
-        void resetTo(double res){
-            Q = 10;
-            P = 0;
-            U_hat = res;
-            K = 0;
-            init = true;
-        }
-
-        double calc(double U){
-            K = P * H / (H * P * H + R);
-            U_hat = U_hat + K * (U - H * U_hat);
-            P = (1 - K * H) * P + Q;
-
-            return U_hat;
-        }
-    } kalman;
+    
     
 
     std::list<uint32_t> time_l;
@@ -103,8 +104,9 @@ public:
     void serviceToSync();
     void loop();
     void encode (char c);
-    inline void PongCallBack(uint32_t pong);
-    inline void TickCallBack(uint32_t tick);
+    void PongCallBack(uint32_t pong);
+    void TickCallBack(uint32_t tick);
+    void toPingResponce();
 
 
 private:
@@ -116,14 +118,15 @@ private:
         bool _isResponce;
         std::vector<double> _time_v;
         double _aver;
-        Kalman kalman_t;
-        Kalman kalman_aver;
+        Kalman<double> kalman_t;
+        Kalman<double> kalman_aver;
     public:
         friend TXCommand;
         PingRecvest (TXCommand &base) : _baseTX(base){
             _time_v.reserve(100);
         }
 
+        // void TXCallBack();
         void PongCallBack(uint32_t pong);
     } pingrec;
 
@@ -131,15 +134,15 @@ private:
         TXCommand& _baseTX;
         std::list<double> _time_v;
         double _aver;
-        Kalman kalman_t;
-        Kalman kalman_aver;
+        Kalman<double> kalman_t;
+        Kalman<double> kalman_aver;
     public:
         friend TXCommand;
         TickRecvest (TXCommand &base) : _baseTX(base) {}
 
         void TickCallBack(uint32_t tick);
     } tickrec;
-
+    
 
     uint8_t command = INVALID_COMMAND;
     uint8_t line[3] = {0,0,0};
@@ -169,4 +172,5 @@ private:
     void GPSRecvestloop();
     void sendGPSRecvest();
     void proccess();
+    void TXPingDoneCallBack();
 };

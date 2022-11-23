@@ -978,9 +978,9 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
     else if (otaPktPtr->std.type == PACKET_TYPE_MSPDATA)
     {
         
-        if (otaPktPtr->msp.msp_ul.payload.type == TYPE_SERVICE_TO_SYNC_RESPONCE && otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.id == command.get_syncRespId())
+        if (otaPktPtr->msp.msp_ul.payload.type == TYPE_SERVICE_TO_SYNC_RESPONCE && otaPktPtr->msp.msp_ul.payload.data.service_to_sync_responce.id == command.get_syncRespId())
         {
-            if (otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.key8 == KEY8 && otaPktPtr->msp.msp_ul.payload.service_to_sync_responce.key16 == KEY16)
+            if (otaPktPtr->msp.msp_ul.payload.data.service_to_sync_responce.key8 == KEY8 && otaPktPtr->msp.msp_ul.payload.data.service_to_sync_responce.key16 == KEY16)
             {
                 command.set_ssResponce(true);
             }
@@ -991,40 +991,47 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
             switch (otaPktPtr->msp.msp_ul.packageIndex)
             {
             case 0:
-                command.set_1lat(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
+                command.set_1lat(otaPktPtr->msp.msp_ul.payload.data.gps_responce.responce); 
                 break;
             case 1:
-                command.set_2lat(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);  
+                command.set_2lat(otaPktPtr->msp.msp_ul.payload.data.gps_responce.responce);  
                 break;
             case 2:
-                command.set_1lng(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
+                command.set_1lng(otaPktPtr->msp.msp_ul.payload.data.gps_responce.responce); 
                 break;
             case 3:
-                command.set_2lng(otaPktPtr->msp.msp_ul.payload.gps_responce.responce); 
+                command.set_2lng(otaPktPtr->msp.msp_ul.payload.data.gps_responce.responce); 
                 break;
             case 4:
-                command.set_1alt(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);
+                command.set_1alt(otaPktPtr->msp.msp_ul.payload.data.gps_responce.responce);
                 break;
             case 5:
-                command.set_2alt(otaPktPtr->msp.msp_ul.payload.gps_responce.responce);                 
+                command.set_2alt(otaPktPtr->msp.msp_ul.payload.data.gps_responce.responce);                 
                 break;
             }
             command.set_grResp(true);
             command.inc_gpsIter();
             char str[100];
-            int l = sprintf(str, "GPS\n Packet = %u\n responce = %lu\n lat = %f\n lng = %f\n alt = %f\n", otaPktPtr->msp.msp_ul.packageIndex, otaPktPtr->msp.msp_ul.payload.gps_responce.responce, command.get_lat(), command.get_lng(), command.get_alt());
+            int l = sprintf(str, "GPS\n Packet = %u\n responce = %lu\n lat = %f\n lng = %f\n alt = %f\n", otaPktPtr->msp.msp_ul.packageIndex, otaPktPtr->msp.msp_ul.payload.data.gps_responce.responce, command.get_lat(), command.get_lng(), command.get_alt());
             Serial.write(str, l);
         }
         else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_PONG_RESPONCE)
         {
             command.PongCallBack(Radio.CallBack32);
+            char str[50];
+            int l = sprintf(str, "Pong\n");
+            Serial.write(str, l);
         }
         else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_TICK_RESPONCE)
         {
-            command.TickCallback(Radio.CallBack32 - otaPktPtr->msp.msp_ul.payload.tick_responce.tick);
+           // command.TickCallback(Radio.CallBack32 - otaPktPtr->msp.msp_ul.payload.tick_responce.tick);
+        }
+        else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_TO_PING_RESPONCE)
+        {
+            command.toPingResponce();
         }
         char str[50];
-        int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.wake_up_responce.key16, millis());
+        int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.key16, millis());
         Serial.write(str, l);
     }
     

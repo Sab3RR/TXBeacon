@@ -18,7 +18,7 @@
             loopfunc();
     }
 
-    inline void TXCommand::PongCallBack(uint32_t pong){
+    void TXCommand::PongCallBack(uint32_t pong){
         pingrec.PongCallBack(pong);
     }
 
@@ -41,10 +41,10 @@
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_SERVICE_TO_SYNC;
-        otaPkt.msp.msp_ul.payload.service_to_sync.id = atoi((char*)arrg);
-        otaPkt.msp.msp_ul.payload.service_to_sync.key8 = KEY8;
-        otaPkt.msp.msp_ul.payload.service_to_sync.fhssconfig = SYNCFHSS;
-        syncResponceId = otaPkt.msp.msp_ul.payload.service_to_sync.id;
+        otaPkt.msp.msp_ul.payload.data.service_to_sync.id = atoi((char*)arrg);
+        otaPkt.msp.msp_ul.payload.data.service_to_sync.key8 = KEY8;
+        otaPkt.msp.msp_ul.payload.data.service_to_sync.fhssconfig = SYNCFHSS;
+        syncResponceId = otaPkt.msp.msp_ul.payload.data.service_to_sync.id;
 
         OtaGeneratePacketCrc(&otaPkt);
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
@@ -71,7 +71,7 @@
 
     void TXCommand::sendToPingRecvest(){
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
-        PackMsg::ToPingRecvest& to_ping_recvest = otaPkt.msp.msp_ul.payload.to_ping_recvest;
+        PackMsg::Data::ToPingRecvest& to_ping_recvest = otaPkt.msp.msp_ul.payload.data.to_ping_recvest;
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_TO_PING_RECVEST;
         to_ping_recvest.id = atoi((char*)arrg);
@@ -83,6 +83,12 @@
         topingrecvest = false;        
     }
 
+    void TXCommand::toPingResponce(){
+        topingrecvest = false;
+        // TXDoneCallBack = std::bind(&PingRecvest::TXCallBack, &pingrec);
+        pingrec._isResponce = true;
+    }
+
     void TXCommand::toPingRecvest(){
         if (topingrecvest && millis() - lasttopingrecvest > 1000){
             sendToPingRecvest();
@@ -92,6 +98,10 @@
         }
     }
 
+    // void TXCommand::PingRecvest::TXCallBack(){
+    //     _isResponce = true;
+    // }
+
     void TXCommand::sendPing(){
         if (!pingrec._isResponce){
             return;
@@ -99,7 +109,7 @@
 
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
 
-        Pack_msg::Ping& ping = otaPkt.msp.msp_ul.payload.ping;
+        Pack_msg::Data::Ping& ping = otaPkt.msp.msp_ul.payload.data.ping;
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_PING_RECVEST;
         pingrec._isResponce = false;
@@ -118,7 +128,7 @@
     void TXCommand::sendToTickRecvest(){
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
         
-        Pack_msg::TickRecvest& tick_recvest = otaPkt.msp.msp_ul.payload.tick_recvest;
+        Pack_msg::Data::TickRecvest& tick_recvest = otaPkt.msp.msp_ul.payload.data.tick_recvest;
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_TICK_RECVEST;
         tick_recvest.id = atoi((char*)arrg);
@@ -133,6 +143,8 @@
     
     void TXCommand::PingRecvest::PongCallBack(uint32_t pong){
         uint32_t airtime = pong - lastCall;
+        double aver;
+
         if (kalman_t.init){
             _time_v.push_back(kalman_t.calc((double)airtime));
         }
@@ -143,16 +155,21 @@
         if (_time_v.size() < 100)
             _isResponce = true;
         else {
-            _aver = std::reduce(_time_v.cbegin(), _time_v.cend()) / (double)_time_v.size();
+            aver = std::reduce(_time_v.cbegin(), _time_v.cend()) / (double)_time_v.size();
             _time_v.clear();
             if (_time_v.capacity() < 100)
                 _time_v.reserve(100);
-            if (kalman_aver.init)
-                kalman_aver.calc(_aver);
+            if (kalman_aver.init){
+                _aver = kalman_aver.calc(aver);
+            }
             else{
-                kalman_aver.resetTo(_aver);
+                kalman_aver.resetTo(aver);
+                _aver = aver;
             }
             _isResponce = true;
+            char str[50];
+            int l = sprintf(str, "aver = %lf", _aver);
+            Serial.write(str, l);
             
         }
     }
@@ -191,11 +208,15 @@
 
     }
 
+    void TXCommand::TXPingDoneCallBack(){
+
+    }
+
     void TXCommand::wakeUp(){
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_WAKE_UP;
-        otaPkt.msp.msp_ul.payload.key32 = KEY32;
+        otaPkt.msp.msp_ul.payload.data.key32 = KEY32;
         
         OtaGeneratePacketCrc(&otaPkt);
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
@@ -215,9 +236,9 @@
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_GPS_RECVEST;
         otaPkt.msp.msp_ul.packageIndex = gpsIter;
-        otaPkt.msp.msp_ul.payload.gps_recvest.id = atoi((char*)arrg);
-        otaPkt.msp.msp_ul.payload.gps_recvest.key8 = KEY8;
-        otaPkt.msp.msp_ul.payload.gps_recvest.key16 = KEY16;
+        otaPkt.msp.msp_ul.payload.data.gps_recvest.id = atoi((char*)arrg);
+        otaPkt.msp.msp_ul.payload.data.gps_recvest.key8 = KEY8;
+        otaPkt.msp.msp_ul.payload.data.gps_recvest.key16 = KEY16;
 
         grResponce = false;
         lastgrRecvest = millis();
@@ -230,9 +251,9 @@
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_GPS_RECVEST;
         otaPkt.msp.msp_ul.packageIndex = atoi((char*)arrg);
-        otaPkt.msp.msp_ul.payload.gps_recvest.id = 2;
-        otaPkt.msp.msp_ul.payload.gps_recvest.key8 = KEY8;
-        otaPkt.msp.msp_ul.payload.gps_recvest.key16 = KEY16;
+        otaPkt.msp.msp_ul.payload.data.gps_recvest.id = 2;
+        otaPkt.msp.msp_ul.payload.data.gps_recvest.key8 = KEY8;
+        otaPkt.msp.msp_ul.payload.data.gps_recvest.key16 = KEY16;
 
         OtaGeneratePacketCrc(&otaPkt);
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);

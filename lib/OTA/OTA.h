@@ -39,7 +39,8 @@
 
 typedef struct PackMsg {
     uint8_t type;
-    union {
+    union Data {
+        public:
         uint32_t key32; // type 0x28 WAKE UP
         struct WakeUpResponce {
             uint8_t id;
@@ -90,8 +91,15 @@ typedef struct PackMsg {
             uint32_t tick;
         } PACKED tick_responce; // type 0x69 TICK_RESPONCE
 
-    };
+    } PACKED data;
 }  PACKED Pack_msg;
+
+struct MSP_Package {
+            uint8_t packageIndex;
+            Pack_msg payload;
+            
+            
+        }PACKED;
 
 typedef struct {
     // The packet type must always be the low two bits of the first byte of the
@@ -101,12 +109,7 @@ typedef struct {
     union {
         /** PACKET_TYPE_RCDATA **/
         /** PACKET_TYPE_MSP **/
-        struct MSP_Package {
-            uint8_t packageIndex;
-            Pack_msg payload;
-            
-            
-        } msp_ul;
+        MSP_Package msp_ul;
         /** PACKET_TYPE_SYNC **/
         /** PACKET_TYPE_TLM **/
          // PACKET_TYPE_TLM
