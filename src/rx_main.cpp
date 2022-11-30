@@ -40,7 +40,7 @@
 #define PACKET_TO_TOCK_SLACK 200 // Desired buffer time between Packet ISR and Tock ISR
 ///////////////////
 
-TXCommand command;
+TXCommand DMA_ATTR command;
 
 device_affinity_t ui_devices[] = {
  // {&CRSF_device, 0},
@@ -908,17 +908,17 @@ double kalman(double U)
 }
 
 
-
+int iForPong = 0;
 
 bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const status)
 {
     clockcallback = ESP.getCycleCount();
     {
-        char *str;
-        str = (char*)malloc(20);
-        int l = sprintf(str, "Got Packet\n");
-        Serial.write(str, l);
-        free(str);
+        // char *str;
+        // str = (char*)malloc(20);
+        // int l = sprintf(str, "Got Packet\n");
+        // Serial.write(str, l);
+        // free(str);
     }
         
     if (status != SX12xxDriverCommon::SX12XX_RX_OK)
@@ -1018,9 +1018,9 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
         else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_PONG_RESPONCE)
         {
             command.PongCallBack(Radio.CallBack32);
-            char str[50];
-            int l = sprintf(str, "Pong\n");
-            Serial.write(str, l);
+            // char str[50];
+            // int l = sprintf(str, "Pong\n iForPong = %i", ++iForPong);
+            // Serial.write(str, l);
         }
         else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_TICK_RESPONCE)
         {
@@ -1030,9 +1030,9 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
         {
             command.toPingResponce();
         }
-        char str[50];
-        int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.key16, millis());
-        Serial.write(str, l);
+        // char str[50];
+        // int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.key16, millis());
+        // Serial.write(str, l);
     }
     
 

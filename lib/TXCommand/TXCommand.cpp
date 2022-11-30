@@ -102,10 +102,14 @@
     //     _isResponce = true;
     // }
 
-    void TXCommand::sendPing(){
-        if (!pingrec._isResponce){
+    void ICACHE_RAM_ATTR TXCommand::sendPing(){
+        if (!pingrec._isResponce && ESP.getCycleCount() - pingrec.lastCall  < 10000000){
             return;
         }
+        
+        // char str[50];
+        // int l = sprintf(str, "send ping = %lu\n", micros64());
+        // Serial.write(str, l);
 
         WORD_ALIGNED_ATTR OTA_Packet_s otaPkt = {0};
 
@@ -113,9 +117,11 @@
         otaPkt.msp.type = PACKET_TYPE_MSPDATA;
         otaPkt.msp.msp_ul.payload.type = TYPE_PING_RECVEST;
         pingrec._isResponce = false;
-        pingrec.lastCall = ESP.getCycleCount();
 
         OtaGeneratePacketCrc(&otaPkt);
+        pingrec.lastCall = ESP.getCycleCount();
+
+        
         Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength);
         
     }
@@ -160,18 +166,23 @@
             if (_time_v.capacity() < 100)
                 _time_v.reserve(100);
             if (kalman_aver.init){
-                _aver = kalman_aver.calc(aver);
+                _aver = kalman_aver3d.calc(kalman_aver2d.calc(kalman_aver.calc(aver)));
             }
             else{
                 kalman_aver.resetTo(aver);
+                kalman_aver2d.resetTo(aver);
+                kalman_aver3d.resetTo(aver);
                 _aver = aver;
             }
             _isResponce = true;
             char str[50];
-            int l = sprintf(str, "aver = %lf", _aver);
+            int l = sprintf(str, "aver = %lf\n", _aver);
             Serial.write(str, l);
             
         }
+        // char str[50];
+        // int l = sprintf(str, "aver = %lf, airtime = %lu", _aver, airtime);
+        // Serial.write(str, l);
     }
     
 

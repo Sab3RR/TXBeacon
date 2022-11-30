@@ -22,8 +22,8 @@
 
 template <typename T>
 struct Kalman{
-    const T R = 5000;
-    const T H = 1.00;
+    const T R = 1000;
+    const double H = 1;
     T Q;
     T P;
     T U_hat;
@@ -31,12 +31,12 @@ struct Kalman{
 
     bool init = false;
 
-    Kalman() : Q(10), P(0), U_hat(0), K(0){
+    Kalman() : Q(100), P(0), U_hat(0), K(0){
 
     }
 
     void resetTo(double res){
-        Q = 10;
+        Q = 100;
         P = 0;
         U_hat = res;
         K = 0;
@@ -50,6 +50,43 @@ struct Kalman{
 
         return U_hat;
     }
+};
+
+template <typename T>
+class Kalman2 {
+    double _dNoise; //дисперсия шума
+    //double dSignal; //дисперсия сигнала
+    double _r; // коэвициент корреляции
+    double _en; // дисперсия
+    double _Pe;
+    double _xx;
+
+    
+
+public:
+
+    bool init = false;
+    Kalman2(double dNoise, double r, double en) : _dNoise(dNoise), _r(r), _en(en){
+
+    }
+    bool ICACHE_RAM_ATTR getInit() { return init;};
+
+    void ICACHE_RAM_ATTR resetTo(T res){
+        _Pe = _dNoise;
+        _xx = res;
+        if (init) 
+            return;
+        else
+            init = true;
+    }
+
+    T ICACHE_RAM_ATTR calc(double z){
+        double Pe = _r * _r * _Pe + _en * _en;
+        _Pe = (Pe * _dNoise) / (Pe + _dNoise);
+        _xx = _r * _xx + _Pe / _dNoise * (z - _r * _xx);
+        return (T)_xx;
+    }
+
 };
 
 
@@ -117,13 +154,21 @@ private:
         TXCommand& _baseTX;
         bool _isResponce;
         std::vector<double> _time_v;
+        std::vector<double> _3calibration;
+        std::vector<double> _aver_v;
         double _aver;
-        Kalman<double> kalman_t;
-        Kalman<double> kalman_aver;
+        Kalman2<double> kalman_t;
+        Kalman2<double> kalman_aver;
+        Kalman2<double> kalman_aver2d;
+        Kalman2<double> kalman_aver3d;
+
     public:
         friend TXCommand;
-        PingRecvest (TXCommand &base) : _baseTX(base){
+        PingRecvest (TXCommand &base) : _baseTX(base), kalman_t(1, 1, 0.1), kalman_aver(1, 1, 0.1)
+        , kalman_aver2d(1, 1, 0.1), kalman_aver3d(1, 1, 0.1){
             _time_v.reserve(100);
+            _3calibration.reserve(100);
+            _aver_v.reserve(100);
         }
 
         // void TXCallBack();
@@ -134,11 +179,11 @@ private:
         TXCommand& _baseTX;
         std::list<double> _time_v;
         double _aver;
-        Kalman<double> kalman_t;
-        Kalman<double> kalman_aver;
+        Kalman2<double> kalman_t;
+        Kalman2<double> kalman_aver;
     public:
         friend TXCommand;
-        TickRecvest (TXCommand &base) : _baseTX(base) {}
+        TickRecvest (TXCommand &base) : _baseTX(base), kalman_t(5000, 0.99, 0.1), kalman_aver(1000, 0.99, 0.1)  {}
 
         void TickCallBack(uint32_t tick);
     } tickrec;
@@ -163,7 +208,7 @@ private:
     void sendTrashPacket();
     void debugChannel();
     void sendToPingRecvest();
-    void sendPing();
+    void ICACHE_RAM_ATTR sendPing();
     void sendToTickRecvest();
     void toPingRecvest();
     void pingRecvest();
