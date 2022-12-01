@@ -151,6 +151,8 @@ private:
 
     class PingRecvest {
         uint32_t lastCall;
+        uint32_t max_airtime;
+        uint32_t min_airtime;
         TXCommand& _baseTX;
         bool _isResponce;
         std::vector<double> _time_v;

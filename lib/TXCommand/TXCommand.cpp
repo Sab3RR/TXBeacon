@@ -150,23 +150,34 @@
     void TXCommand::PingRecvest::PongCallBack(uint32_t pong){
         uint32_t airtime = pong - lastCall;
         double aver;
+        double max;
+        double min;
 
         if (kalman_t.init){
             _time_v.push_back(kalman_t.calc((double)airtime));
+            if (airtime > max_airtime)
+                max_airtime = airtime;
+            if (airtime < min_airtime)
+                min_airtime = airtime;
         }
         else{
             kalman_t.resetTo((double)airtime);
+            max_airtime = airtime;
+            min_airtime = airtime;
         }
 
         if (_time_v.size() < 100)
             _isResponce = true;
         else {
             aver = std::reduce(_time_v.cbegin(), _time_v.cend()) / (double)_time_v.size();
+            max = *std::max_element(_time_v.begin(), _time_v.end());
+            min = *std::min_element(_time_v.begin(), _time_v.end());
+
             _time_v.clear();
             if (_time_v.capacity() < 100)
                 _time_v.reserve(100);
             if (kalman_aver.init){
-                _aver = kalman_aver3d.calc(kalman_aver2d.calc(kalman_aver.calc(aver)));
+                _aver = kalman_aver.calc(aver);
             }
             else{
                 kalman_aver.resetTo(aver);
@@ -176,7 +187,7 @@
             }
             _isResponce = true;
             char str[50];
-            int l = sprintf(str, "aver = %lf\n", _aver);
+            int l = sprintf(str, "aver = %lf, raw aver = %lf, min el = %lf, max el = %lf, min air = %lu, max air = %lu\n", _aver, aver, min, max, min_airtime, max_airtime);
             Serial.write(str, l);
             
         }
@@ -186,14 +197,16 @@
     }
     
 
-    inline void TXCommand::TickCallBack(uint32_t tick){
+    void TXCommand::TickCallBack(uint32_t tick){
         tickrec.TickCallBack(tick);
     }
     
 
     void TXCommand::TickRecvest::TickCallBack(uint32_t tick){
+        
+
         if (kalman_t.init){
-            _time_v.push_back(kalman_t.calc((double)tick));
+           // _time_v.push_back(kalman_t.calc((double)tick));
         }
         else{
             kalman_t.resetTo((double)tick);
@@ -201,13 +214,16 @@
 
         if (_time_v.size() > 100)
         {
-            _time_v.erase(_time_v.begin());
+            _time_v.pop_front();
             _aver = std::reduce(_time_v.cbegin(), _time_v.cend()) / (double)_time_v.size();
             if (kalman_aver.init)
                 kalman_aver.calc(_aver);
             else
                 kalman_aver.resetTo(_aver);
         }
+        char str[50];
+            int l = sprintf(str, "tick = %lu\n", tick);
+            Serial.write(str, l);
     }
 
     void TXCommand::toTickRecvest(){
@@ -288,6 +304,10 @@
             loopfunc = std::bind(&TXCommand::toPingRecvest, this);
             topingrecvest = true;
         }
+        else if (strcmp((char*)line, COMMAND_TICK_RECVEST) == 0){
+            isresponce = false;
+            toTickRecvest();
+        }
         
         
     }
@@ -309,7 +329,6 @@
                 break;
             default:
                 command = INVALID_COMMAND;
-                
         }
 
         switch (c){

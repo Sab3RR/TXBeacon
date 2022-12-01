@@ -1024,15 +1024,19 @@ bool ICACHE_RAM_ATTR MyProccessRFPacket(SX12xxDriverCommon::rx_status const stat
         }
         else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_TICK_RESPONCE)
         {
-           // command.TickCallback(Radio.CallBack32 - otaPktPtr->msp.msp_ul.payload.tick_responce.tick);
+            command.TickCallBack(Radio.CallBack32 - otaPktPtr->msp.msp_ul.payload.data.tick_responce.tick);
         }
         else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_TO_PING_RESPONCE)
         {
             command.toPingResponce();
         }
-        // char str[50];
-        // int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %ul", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.key16, millis());
-        // Serial.write(str, l);
+        else if (otaPktPtr->msp.msp_ul.payload.type == TYPE_WAKE_UP_RESPONCE)
+        {
+            char str[70];
+        int l = sprintf(str, "type = %x\n id = %x\n key8 = %x\n key16 = %x\n millis = %lu", otaPktPtr->msp.msp_ul.payload.type, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.id, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.key8, otaPktPtr->msp.msp_ul.payload.data.wake_up_responce.key16, millis());
+        Serial.write(str, l);
+        }
+        
     }
     
 
