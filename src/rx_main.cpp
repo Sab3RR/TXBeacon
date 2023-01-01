@@ -58,10 +58,10 @@ device_affinity_t ui_devices[] = {
   {&Button_device, 1},
 #endif
 #ifdef HAS_VTX_SPI
-  {&VTxSPI_device, 1},
+  //{&VTxSPI_device, 1},
 #endif
 #ifdef USE_ANALOG_VBAT
-  {&AnalogVbat_device, 1},
+ // {&AnalogVbat_device, 1},
 #endif
 #ifdef HAS_SERVO_OUTPUT
 //  {&ServoOut_device, 0},
@@ -1585,10 +1585,15 @@ RF_PRE_INIT()
 }
 #endif
 
+void ICACHE_RAM_ATTR ZeroFunc()
+{
+
+}
+
 void setup()
 {
     #if defined(TARGET_UNIFIED_RX)
-    Serial.begin(115200);
+    Serial.begin(230400);
     SerialLogger = &Serial;
     hardwareConfigured = options_init();
     if (!hardwareConfigured)
@@ -1631,10 +1636,12 @@ void setup()
 
             hwTimer.callbackTock = &HWtimerCallbackTock;
             hwTimer.callbackTick = &HWtimerCallbackTick;
+            // hwTimer.callbackTock = &ZeroFunc;
+            // hwTimer.callbackTick = &ZeroFunc;
 
             MspReceiver.SetDataToReceive(MspData, ELRS_MSP_BUFFER);
             Radio.RXnb();
-            crsf.Begin();
+            //crsf.Begin();
             hwTimer.init();
         }
     }
@@ -1642,7 +1649,7 @@ void setup()
     UID[4] = 4;
     UID[5] = 5;
     devicesStart();
-    hwTimer.updateInterval(1000);
+    // hwTimer.updateInterval(1000);
     
     
 }
@@ -1712,27 +1719,27 @@ void loop()
     //     doOneTime = false;
          
     // }
-    if (rangeArray.size() >= 100)
-    {
-        uint32_t average = std::reduce(rangeArray.cbegin(), rangeArray.cend())/ (float)rangeArray.size();
-        char str[50];
-        auto range = rangeArray.cbegin();
-        auto timeRange = rangeTime.cbegin();
-        while(range != rangeArray.cend())
-        {
-            int l = sprintf(str, "%lf,%lu\n",  *timeRange, *range);
-            Serial.write(str, l);
-            range++;
-            timeRange++;
-        }
-        cycleMax = *std::max_element(rangeArray.begin(), rangeArray.end());
-        cycleMin = *std::min_element(rangeArray.begin(), rangeArray.end());
-        // int l = sprintf(str, "%lu\n", average);
-        // Serial.write(str, l);
+    // if (rangeArray.size() >= 100)
+    // {
+    //     uint32_t average = std::reduce(rangeArray.cbegin(), rangeArray.cend())/ (float)rangeArray.size();
+    //     char str[50];
+    //     auto range = rangeArray.cbegin();
+    //     auto timeRange = rangeTime.cbegin();
+    //     while(range != rangeArray.cend())
+    //     {
+    //         int l = sprintf(str, "%lf,%lu\n",  *timeRange, *range);
+    //         Serial.write(str, l);
+    //         range++;
+    //         timeRange++;
+    //     }
+    //     cycleMax = *std::max_element(rangeArray.begin(), rangeArray.end());
+    //     cycleMin = *std::min_element(rangeArray.begin(), rangeArray.end());
+    //     // int l = sprintf(str, "%lu\n", average);
+    //     // Serial.write(str, l);
         
-        rangeArray.clear();
-        rangeTime.clear();
-    }
+    //     rangeArray.clear();
+    //     rangeTime.clear();
+    // }
     command.loop();
     // hwTimer.resume();
     

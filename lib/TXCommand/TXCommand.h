@@ -18,7 +18,19 @@
 #define COMMAND_TICK_RECVEST "tr"
 #define COMMAND_DEBUG_CHANNEL "dc"
 
+
+#define AR_SIZE 1000
+
 #define __PREALLOC_SIZE__ 100
+
+class Beam {
+public:
+    
+private:
+    double _lat;
+    double _lng;
+    double _alt;
+};
 
 template <typename T>
 struct Kalman{
@@ -163,6 +175,8 @@ private:
         Kalman2<double> kalman_aver;
         Kalman2<double> kalman_aver2d;
         Kalman2<double> kalman_aver3d;
+        double _time_ar[AR_SIZE];
+        int _time_i = 0;
 
     public:
         friend TXCommand;
@@ -183,9 +197,11 @@ private:
         double _aver;
         Kalman2<double> kalman_t;
         Kalman2<double> kalman_aver;
+        uint32_t _time_ar[AR_SIZE];
+        int _time_i = 0;
     public:
         friend TXCommand;
-        TickRecvest (TXCommand &base) : _baseTX(base), kalman_t(5000, 0.99, 0.1), kalman_aver(1000, 0.99, 0.1)  {}
+        TickRecvest (TXCommand &base) : _baseTX(base), kalman_t(1, 1, 0.1), kalman_aver(1, 1, 0.1)  {}
 
         void TickCallBack(uint32_t tick);
     } tickrec;

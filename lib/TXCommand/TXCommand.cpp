@@ -149,7 +149,11 @@
     
     void TXCommand::PingRecvest::PongCallBack(uint32_t pong){
         uint32_t airtime = pong - lastCall;
-        double aver;
+        double aver = 0;
+        double aver10 = 0;
+        double aver50 = 0;
+        double aver100 = 0;
+        double aver500 = 0;
         double max;
         double min;
 
@@ -159,9 +163,59 @@
                 max_airtime = airtime;
             if (airtime < min_airtime)
                 min_airtime = airtime;
+            // if (_time_ar.size() < 500)
+            // {
+            //     _time_ar.push_back(kalman_aver2d.calc((double)airtime));
+            //     ++_time_i;
+            // }
+            // else{
+                if (_time_i >= 1000)
+                    _time_i = 0;
+                _time_ar[_time_i] = (double)airtime;
+                int iter = _time_i;
+                ++_time_i;
+                
+                min = airtime;
+                for (int i = 0; i < AR_SIZE; i++)
+                {
+                    if (i < 10)
+                        aver10 += _time_ar[iter];
+                    if (i < 50)
+                        aver50 += _time_ar[iter];
+                    if (i < 100)
+                        aver100 += _time_ar[iter];
+                    if (i < 500)
+                        aver500 += _time_ar[iter];
+                    aver += _time_ar[iter];
+                    if (max < _time_ar[iter])
+                        max = _time_ar[iter];
+                    else if (min > _time_ar[iter])
+                        min = _time_ar[iter];
+                    --iter;
+                    if (iter < 0)
+                        iter = AR_SIZE - 1;
+                }
+                aver /= (double)AR_SIZE;
+                aver10 /= (double)10;
+                aver50 /= (double)50;
+                aver100 /= (double)100;
+                aver500 /= (double)500;
+                // aver = std::reduce(_time_ar.cbegin(), _time_ar.cend()) / (double)_time_ar.size();
+                // max = *std::max_element(_time_ar.begin(), _time_ar.end());
+                // min = *std::min_element(_time_ar.begin(), _time_ar.end());
+                char str[50];
+            //int l = sprintf(str, "aver = %lf, raw aver = %lf, min el = %lf, max el = %lf, min air = %lu, max air = %lu\n", _aver, aver, min, max, min_airtime, max_airtime);
+            int l = sprintf(str, "%lu,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", airtime, aver10, aver50, aver100, aver500, aver, min, max);
+
+            Serial.write(str, l);
+
+            // }
+            
         }
         else{
             kalman_t.resetTo((double)airtime);
+            kalman_aver2d.resetTo((double)airtime);
+            kalman_aver3d.resetTo((double)airtime);
             max_airtime = airtime;
             min_airtime = airtime;
         }
@@ -181,14 +235,16 @@
             }
             else{
                 kalman_aver.resetTo(aver);
-                kalman_aver2d.resetTo(aver);
-                kalman_aver3d.resetTo(aver);
+                // kalman_aver2d.resetTo(aver);
+                // kalman_aver3d.resetTo(aver);
                 _aver = aver;
             }
             _isResponce = true;
-            char str[50];
-            int l = sprintf(str, "aver = %lf, raw aver = %lf, min el = %lf, max el = %lf, min air = %lu, max air = %lu\n", _aver, aver, min, max, min_airtime, max_airtime);
-            Serial.write(str, l);
+            // char str[50];
+            // //int l = sprintf(str, "aver = %lf, raw aver = %lf, min el = %lf, max el = %lf, min air = %lu, max air = %lu\n", _aver, aver, min, max, min_airtime, max_airtime);
+            // int l = sprintf(str, "%lf,%lf,%lf,%lf,%lu,%lu\n", _aver, aver, min, max, min_airtime, max_airtime);
+
+            // Serial.write(str, l);
             
         }
         // char str[50];
@@ -204,26 +260,72 @@
 
     void TXCommand::TickRecvest::TickCallBack(uint32_t tick){
         
-
-        if (kalman_t.init){
-           // _time_v.push_back(kalman_t.calc((double)tick));
-        }
-        else{
-            kalman_t.resetTo((double)tick);
-        }
-
-        if (_time_v.size() > 100)
+        uint32_t aver = 0;
+        uint32_t aver10 = 0;
+        uint32_t aver50 = 0;
+        uint32_t aver100 = 0;
+        uint32_t aver500 = 0;
+        uint32_t max;
+        uint32_t min;
+        if (_time_i >= 1000)
+            _time_i = 0;
+        _time_ar[_time_i] = tick;
+        int iter = _time_i;
+        ++_time_i;
+                
+        min = tick;
+        for (int i = 0; i < AR_SIZE; i++)
         {
-            _time_v.pop_front();
-            _aver = std::reduce(_time_v.cbegin(), _time_v.cend()) / (double)_time_v.size();
-            if (kalman_aver.init)
-                kalman_aver.calc(_aver);
-            else
-                kalman_aver.resetTo(_aver);
+            if (i < 10)
+                aver10 += _time_ar[iter];
+            if (i < 50)
+                aver50 += _time_ar[iter];
+            if (i < 100)
+                aver100 += _time_ar[iter];
+            if (i < 500)
+                aver500 += _time_ar[iter];
+            aver += _time_ar[iter];
+            if (max < _time_ar[iter])
+                max = _time_ar[iter];
+            else if (min > _time_ar[iter])
+                min = _time_ar[iter];
+            --iter;
+            if (iter < 0)
+                iter = AR_SIZE - 1;
         }
+        aver /= AR_SIZE;
+        aver10 /= 10;
+        aver50 /= 50;
+        aver100 /= 100;
+        aver500 /= 500;
+                // aver = std::reduce(_time_ar.cbegin(), _time_ar.cend()) / (double)_time_ar.size();
+                // max = *std::max_element(_time_ar.begin(), _time_ar.end());
+                // min = *std::min_element(_time_ar.begin(), _time_ar.end());
         char str[50];
-            int l = sprintf(str, "tick = %lu\n", tick);
+            //int l = sprintf(str, "aver = %lf, raw aver = %lf, min el = %lf, max el = %lf, min air = %lu, max air = %lu\n", _aver, aver, min, max, min_airtime, max_airtime);
+            int l = sprintf(str, "%lu,%lu,%lu,%lu,%lu,%lu,%lu,%lu\n", tick, aver10, aver50, aver100, aver500, aver, min, max);
+
             Serial.write(str, l);
+
+        // if (kalman_t.init){
+        //    // _time_v.push_back(kalman_t.calc((double)tick));
+        // }
+        // else{
+        //     kalman_t.resetTo((double)tick);
+        // }
+
+        // if (_time_v.size() > 100)
+        // {
+        //     _time_v.pop_front();
+        //     _aver = std::reduce(_time_v.cbegin(), _time_v.cend()) / (double)_time_v.size();
+        //     if (kalman_aver.init)
+        //         kalman_aver.calc(_aver);
+        //     else
+        //         kalman_aver.resetTo(_aver);
+        // }
+        // char str[50];
+        //     int l = sprintf(str, "tick = %lu\n", tick);
+        //     Serial.write(str, l);
     }
 
     void TXCommand::toTickRecvest(){
