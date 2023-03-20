@@ -496,6 +496,7 @@ EIGEN_CONSTEXPR Index size(const T (&) [N]) { return N; }
   * This uses std::result_of. However, note the `type` member removes
   * const and converts references/pointers to their corresponding value type.
   */
+#undef F
 #if EIGEN_HAS_STD_INVOKE_RESULT
 template<typename T> struct result_of;
 

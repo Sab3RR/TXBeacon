@@ -1,3 +1,5 @@
+#include "Eigen.h"
+#include "TXCommand.h"
 #include "rxtx_common.h"
 #include "LowPassFilter.h"
 
@@ -27,7 +29,8 @@
 #include <chrono>
 #include <numeric>
 #include <algorithm>
-#include "TXCommand.h"
+
+
 
 ///LUA///
 #define LUA_MAX_PARAMS 32

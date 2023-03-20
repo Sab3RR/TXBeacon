@@ -1,9 +1,13 @@
+#include "Eigen.h"
+#include <Eigen/Dense>
 #include "common.h"
 #include "OTA.h"
 #include <string>
 #include "FHSS.h"
 #include <functional>
 #include <list>
+
+
 
 #define SYNCFHSS 5
 
@@ -23,13 +27,28 @@
 
 #define __PREALLOC_SIZE__ 100
 
+struct LLH {
+
+    LLH(double lt, double ln, double al) : lat(lt), lng(ln), alt(al){
+        
+    }
+
+    double lat;
+    double lng;
+    double alt;
+};
+
 class Beam {
 public:
     
 private:
-    double _lat;
-    double _lng;
-    double _alt;
+    LLH _llhpos;
+    Eigen::Vector3d _pos;
+    uint8_t id;
+
+    Eigen::Vector3d LLHtoECEF(double lat, double lng, double alt);
+    LLH ECEFtoLLH(Eigen::Vector3d pos);
+    
 };
 
 template <typename T>

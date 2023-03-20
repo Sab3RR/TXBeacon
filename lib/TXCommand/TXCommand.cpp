@@ -4,12 +4,78 @@
 #include <string>
 #include "FHSS.h"
 #include <numeric>
+#include <math.h>
 
 
+// def LLHtoECEF(lat, lon, alt):
+//     # see http://www.mathworks.de/help/toolbox/aeroblks/llatoecefposition.html
 
+//     rad = np.float64(6378137.0)        # Radius of the Earth (in meters)
+//     f = np.float64(1.0/298.257223563)  # Flattening factor WGS84 Model
+//     cosLat = np.cos(lat)
+//     sinLat = np.sin(lat)
+//     FF     = (1.0-f)**2
+//     C      = 1/np.sqrt(cosLat**2 + FF * sinLat**2)
+//     S      = C * FF
+
+//     x = (rad * C + alt)*cosLat * np.cos(lon)
+//     y = (rad * C + alt)*cosLat * np.sin(lon)
+//     z = (rad * S + alt)*sinLat
+
+//     return (x, y, z)
 
 
     
+
+    Eigen::Vector3d Beam::LLHtoECEF(double lat, double lng, double alt){
+        const double rad = 6378137.0;
+        const double f = 1.0/298.257223563;
+        const double cosLat = cos(lat);
+        const double sinLat = sin(lat);
+        const double FF = pow(1.0 - f, 2);
+        const double C = 1/sqrt(pow(cosLat, 2) + FF * pow(sinLat, 2));
+        const double S = C * FF;
+
+        const double x = (rad * C + alt) * cosLat * cos(lng);
+        const double y = (rad * C + alt) * cosLat * sin(lng);
+        const double z = (rad * S + alt) * sinLat;
+
+        Eigen::Vector3d vec(x, y, z);
+        return vec; 
+    }
+
+
+    LLH Beam::ECEFtoLLH(Eigen::Vector3d pos){
+        const double rad = 6378137.0;
+        const double f = 1.0/298.257223563;
+
+        const double s = sqrt(pow(pos.x(), 2) + pow(pos.y(), 2));
+
+        const double lng = atan(pos.x() / pos.y());
+        double redlat = atan(pos.z() / ((1.0 - f) * s));
+        const double e = 1.0 - pow((1.0 - f), 2);
+
+        double lat = atan((pos.z() + ((e* (1.0 - f)) / (1.0 - e)) * rad * pow(sin(redlat), 3)) / (s - e * rad * pow(cos(redlat), 3)));
+        double checkredlat = atan(((1 - f) * sin(lat)) / cos(lat));
+        int i = 0;
+
+        while (i < 50)
+        {
+            if (redlat == checkredlat)
+                break;
+            redlat = checkredlat;
+            lat = atan((pos.z() + ((e* (1.0 - f)) / (1.0 - e)) * rad * pow(sin(redlat), 3)) / (s - e * rad * pow(cos(redlat), 3)));
+            checkredlat = atan(((1 - f) * sin(lat)) / cos(lat));
+            i++;
+        }
+
+        const double N = rad / sqrt(1.0 - e * pow(sin(lat), 2));
+        const double alt = s * cos(lat) + (pos.z() + e * N * sin(lat)) * sin(lat) - N;
+        LLH llhpos(lat, lng, alt);
+
+        return llhpos;
+
+    }
 
      
 
